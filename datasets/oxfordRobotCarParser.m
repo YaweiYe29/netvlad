@@ -3,19 +3,40 @@ classdef oxfordRobotCarParser<handle
     properties
         imageFns;
         imageTimeStamp;
+        utm;
+        
+        dbImageFns;
+        numImages;
+        utmDb;
+        
+        qImageFns;
+        numQueries;
+        utmQ;
+        
+        dbRatio;
+        eastThr;
+        northThr;
+        nonTrivPosDistThr;
         posDisThr;
         seqIdx;
         seqTimeStamp;
-        utm;
-        nonTrivPosDistThr;
+        whichSet;
     end
     
     methods
         function obj= oxfordRobotCarParser(seqTimeStamp, posDisThr, ...
-                nonTrivPosDistThr)
+                nonTrivPosDistThr, whichSet, eastThr, northThr, dbRatio)
             
+            % whichSet is one of: train, val, test
+            assert( ismember(whichSet, {'train', 'val', 'test'}) );
+            obj.whichSet = whichSet;
+            
+            obj.dbRatio = dbRatio;
             obj.posDisThr= posDisThr;
             obj.nonTrivPosDistThr= nonTrivPosDistThr;
+            
+            obj.eastThr = eastThr;
+            obj.northThr = northThr;
             
             paths= localPaths();
             datasetRoot= paths.dsetRootRobotCar;
@@ -46,6 +67,7 @@ classdef oxfordRobotCarParser<handle
             obj.seqTimeStamp = seqTimeStamp;
             obj.loadUTMPosition();
             obj.removeImagesWithBadGPS();
+            obj.dataSplitter();
         end
         
         function loadUTMPosition(obj)
@@ -77,6 +99,60 @@ classdef oxfordRobotCarParser<handle
             obj.imageTimeStamp = obj.imageTimeStamp(validGPSMeasurements);
             obj.seqIdx = obj.seqIdx(validGPSMeasurements);
             obj.utm = obj.utm(validGPSMeasurements, :);
+        end
+        
+        function dataSplitter(obj)
+            switch obj.whichSet
+                case 'train'
+                    trainSetIdx = find(obj.utm(:, 2) > obj.eastThr);
+                    isDatabase = rand(length(trainSetIdx), 1) < obj.dbRatio;
+                    
+                case 'val'
+                    valSetIdx = obj.utm(:, 2) < obj.eastThr ...
+                        & obj.utm(:, 1) > obj.northThr;
+                    isDatabase = rand(length(valSetIdx), 1) < obj.dbRatio;
+                    
+                    dbIdx = valSetIdx(isDatabase);
+                    qIdx = valSetIdx(~isDatabase);
+                    
+                    obj.dbImageFns = obj.imageFns(dbIdx);
+                    obj.utmDb = obj.utm(dbIdx);
+                    obj.numImages = length(dbIdx);
+                    
+                    obj.qImageFns = obj.imageFns(qIdx);
+                    obj.utmQ = obj.utm(qIdx);
+                    obj.numQueries = length(qIdx);
+                    
+                case 'test'
+                    testSetIdx = obj.utm(:, 2) < obj.eastThr ...
+                        & obj.utm(:, 1) < obj.northThr;
+                    isDatabase = rand(length(testSetIdx), 1) < obj.dbRatio;
+                    
+                    dbIdx = testSetIdx(isDatabase);
+                    qIdx = testSetIdx(~isDatabase);
+                    
+                    obj.dbImageFns = obj.imageFns(dbIdx);
+                    obj.utmDb = obj.utm(dbIdx);
+                    obj.numImages = length(dbIdx);
+                    
+                    obj.qImageFns = obj.imageFns(qIdx);
+                    obj.utmQ = obj.utm(qIdx);
+                    obj.numQueries = length(qIdx);
+                    
+                otherwise
+                    disp('Unknown dataset type!');
+                    assert(false);
+            end
+            dbIdx = trainSetIdx(isDatabase);
+            qIdx = trainSetIdx(~isDatabase);
+            
+            obj.dbImageFns = obj.imageFns(dbIdx);
+            obj.utmDb = obj.utm(dbIdx);
+            obj.numImages = length(dbIdx);
+            
+            obj.qImageFns = obj.imageFns(qIdx);
+            obj.utmQ = obj.utm(qIdx);
+            obj.numQueries = length(qIdx);
         end
     end
 end
