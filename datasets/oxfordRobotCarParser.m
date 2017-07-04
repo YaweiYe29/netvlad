@@ -104,47 +104,26 @@ classdef oxfordRobotCarParser<handle
         function dataSplitter(obj)
             switch obj.whichSet
                 case 'train'
-                    trainSetIdx = find(obj.utm(:, 2) > obj.eastThr);
-                    isDatabase = rand(length(trainSetIdx), 1) < obj.dbRatio;
+                    subsetIdx = find(obj.utm(:, 2) > obj.eastThr);
+                    isDatabase = rand(length(subsetIdx), 1) < obj.dbRatio;
                     
                 case 'val'
-                    valSetIdx = obj.utm(:, 2) < obj.eastThr ...
+                    subsetIdx = obj.utm(:, 2) < obj.eastThr ...
                         & obj.utm(:, 1) > obj.northThr;
-                    isDatabase = rand(length(valSetIdx), 1) < obj.dbRatio;
-                    
-                    dbIdx = valSetIdx(isDatabase);
-                    qIdx = valSetIdx(~isDatabase);
-                    
-                    obj.dbImageFns = obj.imageFns(dbIdx);
-                    obj.utmDb = obj.utm(dbIdx);
-                    obj.numImages = length(dbIdx);
-                    
-                    obj.qImageFns = obj.imageFns(qIdx);
-                    obj.utmQ = obj.utm(qIdx);
-                    obj.numQueries = length(qIdx);
+                    isDatabase = rand(length(subsetIdx), 1) < obj.dbRatio;
                     
                 case 'test'
-                    testSetIdx = obj.utm(:, 2) < obj.eastThr ...
+                    subsetIdx = obj.utm(:, 2) < obj.eastThr ...
                         & obj.utm(:, 1) < obj.northThr;
-                    isDatabase = rand(length(testSetIdx), 1) < obj.dbRatio;
-                    
-                    dbIdx = testSetIdx(isDatabase);
-                    qIdx = testSetIdx(~isDatabase);
-                    
-                    obj.dbImageFns = obj.imageFns(dbIdx);
-                    obj.utmDb = obj.utm(dbIdx);
-                    obj.numImages = length(dbIdx);
-                    
-                    obj.qImageFns = obj.imageFns(qIdx);
-                    obj.utmQ = obj.utm(qIdx);
-                    obj.numQueries = length(qIdx);
+                    isDatabase = rand(length(subsetIdx), 1) < obj.dbRatio;
                     
                 otherwise
                     disp('Unknown dataset type!');
                     assert(false);
             end
-            dbIdx = trainSetIdx(isDatabase);
-            qIdx = trainSetIdx(~isDatabase);
+            
+            dbIdx = subsetIdx(isDatabase);
+            qIdx = subsetIdx(~isDatabase);
             
             obj.dbImageFns = obj.imageFns(dbIdx);
             obj.utmDb = obj.utm(dbIdx);
