@@ -1,4 +1,4 @@
-classdef oxfordRobotCarParser<handle
+classdef oxfordRobotCarParser < handle
     
     properties
         imageFns;
@@ -49,7 +49,7 @@ classdef oxfordRobotCarParser<handle
             
             imageFnsAllSeq = [];
             seqIdx = [];
-            for j = 1:length(datasetPathList)
+            parfor j = 1:length(datasetPathList)
                 imageSingleSeq = dir(char(fullfile(datasetPathList{j},'*.jpg')));
                 
                 imageFoldersSingleSeq = char(imageSingleSeq.folder);
@@ -135,4 +135,3 @@ classdef oxfordRobotCarParser<handle
         end
     end
 end
-
