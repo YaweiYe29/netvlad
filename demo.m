@@ -1,11 +1,18 @@
 %  Author: Relja Arandjelovic (relja@relja.info)
 
-% This file contains a few examples of how to train and test CNNs for place recognition, refer to README.md for setup instructions, and to our project page for all relevant information (e.g. our paper): http://www.di.ens.fr/willow/research/netvlad/
+% This file contains a few examples of how to train and test CNNs for place
+% recognition, refer to README.md for setup instructions, and to our
+% project page for all relevant information (e.g. our paper):
+% http://www.di.ens.fr/willow/research/netvlad/
 
 
-%  The code samples use the GPU by default, if you want to use the CPU instead (very slow especially for training!), add `'useGPU', false` to the affected function calls (trainWeakly, addPCA, serialAllFeats, computeRepresentation)
+% The code samples use the GPU by default, if you want to use the CPU
+% instead (very slow especially for training!), add `'useGPU', false` to
+% the affected function calls (trainWeakly, addPCA, serialAllFeats,
+% computeRepresentation)
 
-% For a tiny example of running the training on a small dataset, which takes only a few minutes to run, refer to the end of this file.
+% For a tiny example of running the training on a small dataset, which
+% takes only a few minutes to run, refer to the end of this file.
 
 
 
@@ -37,12 +44,12 @@ feats= computeRepresentation(net, im); % add `'useGPU', false` if you want to us
 %
 %          serialAllFeats(net, imPath, imageFns, outputFn);
 %
-% `imageFns` is a cell array containing image file names relative to the 
-% `imPath` (i.e. `[imPath, imageFns{i}]` is a valid JPEG image), the 
-% representations are saved in binary format (single 4-byte floats). 
-% Batch size used for computing the forward pass can be changed by adding 
-% the `batchSize` parameter, e.g. `'batchSize', 10`. Note that if your 
-% input images are not all of same size (they are in place recognition 
+% `imageFns` is a cell array containing image file names relative to the
+% `imPath` (i.e. `[imPath, imageFns{i}]` is a valid JPEG image), the
+% representations are saved in binary format (single 4-byte floats).
+% Batch size used for computing the forward pass can be changed by adding
+% the `batchSize` parameter, e.g. `'batchSize', 10`. Note that if your
+% input images are not all of same size (they are in place recognition
 % datasets), you should set `batchSize` to 1.
 
 %  To test the network on a place recognition dataset, set up the test dataset
@@ -82,10 +89,12 @@ sessionID= trainWeakly(dbTrain, dbVal, ...
     'doDraw', true);
 
 % Get the best network
-% This can be done even if training is not finished, it will find the best network so far
+% This can be done even if training is not finished, it will find the best
+% network so far
 [~, bestNet]= pickBestNet(sessionID);
 
-% Either use the above network as the image representation extractor (do: finalNet= bestNet), or do whitening (recommended):
+% Either use the above network as the image representation extractor
+% (do: finalNet= bestNet), or do whitening (recommended):
 finalNet= addPCA(bestNet, dbTrain, 'doWhite', true, 'pcaDim', 4096);
 
 % --- Test
