@@ -2,38 +2,43 @@ classdef oxfordRobotCarParser<handle
     
     properties
         imageFns;
-        imageTimeStamp;
+        imageUnixTimeStamp;
         utm;
+        imageTimeStamp;
         
         dbImageFns;
         numImages;
         utmDb;
+        dbTimeStamp;
         
         qImageFns;
         numQueries;
         utmQ;
+        qTimeStamp;
         
         dbRatio;
         eastThr;
         northThr;
-        nonTrivPosDistThr;
-        posDisThr;
-        seqIdx;
-        seqTimeStamp;
+        nonTrivPosDistSqThr;
+        posDistThr;
+        posDistSqThr;
+        seqNum;
+        sequenceIdx;
         whichSet;
     end
     
     methods
-        function obj= oxfordRobotCarParser(seqTimeStamp, posDisThr, ...
-                nonTrivPosDistThr, whichSet, eastThr, northThr, dbRatio)
+        function obj= oxfordRobotCarParser(sequenceIdx, sequenceTimeStamps, ...
+                posDistThr, nonTrivPosDistSqThr, whichSet, eastThr, northThr, dbRatio)
             
             % whichSet is one of: train, val, test
             assert( ismember(whichSet, {'train', 'val', 'test'}) );
             obj.whichSet = whichSet;
             
             obj.dbRatio = dbRatio;
-            obj.posDisThr= posDisThr;
-            obj.nonTrivPosDistThr= nonTrivPosDistThr;
+            obj.posDistThr= posDistThr;
+            obj.posDistSqThr = posDistThr^2;
+            obj.nonTrivPosDistSqThr= nonTrivPosDistSqThr;
             
             obj.eastThr = eastThr;
             obj.northThr = northThr;
@@ -41,15 +46,17 @@ classdef oxfordRobotCarParser<handle
             paths= localPaths();
             datasetRoot= paths.dsetRootRobotCar;
             
-            datasetPathList = cell(size(seqTimeStamp));
-            for i = 1:length(seqTimeStamp)
-                datasetPathList{i} = {[datasetRoot seqTimeStamp{i} ...
+            datasetPathList = cell(size(sequenceIdx));
+            for i = 1:length(sequenceIdx)
+                datasetPathList{i} = {[datasetRoot sequenceIdx{i} ...
                     '/stereo/centre/undistort_images_crop/']};
             end
             
             imageFnsAllSeq = [];
-            seqIdx = [];
-            for j = 1:length(datasetPathList)
+            seqNum = [];
+            imageTimeStampsSingleSeq = [];
+            imageTimeStampsAllSeq = [];
+            parfor j = 1:length(datasetPathList)
                 imageSingleSeq = dir(char(fullfile(datasetPathList{j},'*.jpg')));
                 
                 imageFoldersSingleSeq = char(imageSingleSeq.folder);
@@ -59,29 +66,39 @@ classdef oxfordRobotCarParser<handle
                     '/', string(imageNamesSingleSeq)));
                 imageFnsAllSeq = [imageFnsAllSeq; imageFnsSingleSeq];
                 
-                seqIdx = [seqIdx; j*ones(length(imageFnsSingleSeq), 1)];
+                imageTimeStampsSingleSeq = repmat(sequenceTimeStamps(j), ...
+                    [1, length(imageFnsSingleSeq)]);
+                imageTimeStampsAllSeq = [imageTimeStampsAllSeq ...
+                    imageTimeStampsSingleSeq];
+                
+                seqNum = [seqNum; j*ones(length(imageFnsSingleSeq), 1)];
             end
+            
             obj.imageFns = imageFnsAllSeq;
-            obj.imageTimeStamp = cellfun(@(x) str2double(x(end-23:end-8)), imageFnsAllSeq);
-            obj.seqIdx = seqIdx;
-            obj.seqTimeStamp = seqTimeStamp;
+            obj.imageTimeStamp = imageTimeStampsAllSeq;
+            obj.imageUnixTimeStamp = cellfun(@(x) str2double(x(end-23:end-8)), ...
+                imageFnsAllSeq);
+            
+            obj.seqNum = seqNum;
+            obj.sequenceIdx = sequenceIdx;
+            
             obj.loadUTMPosition();
             obj.removeImagesWithBadGPS();
             obj.dataSplitter();
         end
         
         function loadUTMPosition(obj)
-            % Estimate image positions by applyiimageTimeStampng linear interpolation on GPS
+            % Estimate image positions by applying linear interpolation on GPS
             % measurements based on image timestamps
             paths = localPaths;
             imageGPSPositions = [];
             gpsDataRoot = paths.gpsDataRootRobotCar;
             
-            parfor i = 1:length(obj.seqTimeStamp)
+            parfor i = 1:length(obj.sequenceIdx)
                 % Load GPS+INS measurements.
-                ins_file = [gpsDataRoot obj.seqTimeStamp{i} '/gps/ins.csv'];
+                ins_file = [gpsDataRoot obj.sequenceIdx{i} '/gps/ins.csv'];
                 
-                imageTimeSingleSeq = obj.imageTimeStamp(obj.seqIdx == i);
+                imageTimeSingleSeq = obj.imageUnixTimeStamp(obj.seqNum == i);
                 imageGPSPositionsSingleSeq = ...
                     getUTMPosition(ins_file, imageTimeSingleSeq);
                 imageGPSPositions  = ...
@@ -96,8 +113,9 @@ classdef oxfordRobotCarParser<handle
             validGPSMeasurements = ~isnan(obj.utm(:,1));
             
             obj.imageFns = obj.imageFns(validGPSMeasurements);
+            obj.imageUnixTimeStamp = obj.imageUnixTimeStamp(validGPSMeasurements);
+            obj.seqNum = obj.seqNum(validGPSMeasurements);
             obj.imageTimeStamp = obj.imageTimeStamp(validGPSMeasurements);
-            obj.seqIdx = obj.seqIdx(validGPSMeasurements);
             obj.utm = obj.utm(validGPSMeasurements, :);
         end
         
@@ -108,13 +126,13 @@ classdef oxfordRobotCarParser<handle
                     isDatabase = rand(length(subsetIdx), 1) < obj.dbRatio;
                     
                 case 'val'
-                    subsetIdx = obj.utm(:, 2) < obj.eastThr ...
-                        & obj.utm(:, 1) > obj.northThr;
+                    subsetIdx = find(obj.utm(:, 2) < obj.eastThr ...
+                        & obj.utm(:, 1) > obj.northThr);
                     isDatabase = rand(length(subsetIdx), 1) < obj.dbRatio;
                     
                 case 'test'
-                    subsetIdx = obj.utm(:, 2) < obj.eastThr ...
-                        & obj.utm(:, 1) < obj.northThr;
+                    subsetIdx = find(obj.utm(:, 2) < obj.eastThr ...
+                        & obj.utm(:, 1) < obj.northThr);
                     isDatabase = rand(length(subsetIdx), 1) < obj.dbRatio;
                     
                 otherwise
@@ -126,11 +144,13 @@ classdef oxfordRobotCarParser<handle
             qIdx = subsetIdx(~isDatabase);
             
             obj.dbImageFns = obj.imageFns(dbIdx);
-            obj.utmDb = obj.utm(dbIdx);
+            obj.dbTimeStamp = obj.imageTimeStamp(dbIdx);
+            obj.utmDb = obj.utm(dbIdx, :);
             obj.numImages = length(dbIdx);
             
             obj.qImageFns = obj.imageFns(qIdx);
-            obj.utmQ = obj.utm(qIdx);
+            obj.qTimeStamp = obj.imageTimeStamp(qIdx);
+            obj.utmQ = obj.utm(qIdx, :);
             obj.numQueries = length(qIdx);
         end
     end
