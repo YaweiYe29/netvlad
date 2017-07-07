@@ -36,8 +36,13 @@ classdef dbOxfordRobotCar < dbBase
         function [ids, ds]= nnSearchPostprocess(db, searcher, iQuery, nTop)
             % there's roughly up to 5 panoramas at different times per
             % location, so a very conservative estimate..
-            [ids, ds]= searcher(iQuery, nTop*10);
-            keep= db.qTimeStamp(iQuery)~=db.dbTimeStamp(ids);
+            keep = 0;
+            factor = 1;
+            while(sum(keep) < nTop)
+                factor = factor*10;
+                [ids, ds]= searcher(iQuery, nTop*factor);
+                keep= db.qTimeStamp(iQuery)~=db.dbTimeStamp(ids);
+            end
             ids= ids(keep);
             ds= ds(keep);
             ids= ids(1:min(end,nTop));
