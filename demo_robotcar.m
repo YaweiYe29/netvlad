@@ -3,7 +3,7 @@ close all
 
 %% ---------- Full train and test example: RobotCar
 % Set the MATLAB paths
-setup_netvlad;
+setup;
 
 % Train: RobotCar, Test: RobotCar
 
