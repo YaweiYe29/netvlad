@@ -48,7 +48,7 @@ function sessionID= trainWeakly(dbTrain, dbVal, varargin)
     paths= localPaths();
     
     opts= vl_argparse(opts, varargin);
-    if isempty(opts.sessionID),
+    if isempty(opts.sessionID)
         if opts.startEpoch>1, error('Have to specify sessionID to restart'); end
         rng('shuffle'); opts.sessionID= relja_randomHex(4);
     end
@@ -58,7 +58,7 @@ function sessionID= trainWeakly(dbTrain, dbVal, varargin)
     end
     opts.dbTrainName= dbTrain.name;
     opts.dbValName= dbVal.name;
-    if isempty(opts.fixLayers), opts.fixLayers= {}; end;
+    if isempty(opts.fixLayers), opts.fixLayers= {}; end
     if ~isempty(opts.jitterScale)
         im= imread([dbTrain.dbPath, dbTrain.dbImageFns{1}]);
         origImS= min(size(im,1), size(im,2));
@@ -151,7 +151,7 @@ function sessionID= trainWeakly(dbTrain, dbVal, varargin)
             opts.qCheckpoint0= sprintf('%s%s_%s_%s_%s_%s%s_ep%06d_q.bin', opts.outPrefix, dbTrain.name, opts.netID, opts.layerName, opts.method, opts.checkpoint0suffix, opts.sessionID, opts.startEpoch-1);
         end
         
-        display(opts);
+%         display(opts);
         
     end
     
