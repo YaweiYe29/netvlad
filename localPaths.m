@@ -43,5 +43,5 @@ function paths= localPaths()
     paths.initData= '~/Data/netvlad/initdata/';
     
     % --- output directory
-    paths.outPrefix= '~/Data/netvlad/output/';
+    paths.outPrefix= '/media/yawei/HDD/netvlad/output/';
 end
