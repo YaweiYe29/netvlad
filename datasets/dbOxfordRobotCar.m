@@ -5,13 +5,13 @@ classdef dbOxfordRobotCar < dbBase
     end
     
     methods
-        function db= dbOxfordRobotCar(whichSet)
+        function db= dbOxfordRobotCar(whichSet, dbRatio)
             % fullSize is: true or false
             % whichSet is one of: train, val, test
             
             assert( ismember(whichSet, {'train', 'val', 'test'}) );
             
-            db.name= sprintf('robotCar_%s', whichSet);
+            db.name= sprintf('robotCar_%s_dbRatio%s', whichSet, dbRatio);
             
             paths= localPaths();
             dbRoot= paths.dsetRootRobotCar;

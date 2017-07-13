@@ -23,7 +23,7 @@ sequenceTimeStamps = [ ...
 whichSet = {'train', 'val', 'test'}; % 'train', 'val', 'test'
 posDisThr = 25;
 nonTrivPosDistThr = 100;
-dbRatio = 0.9;
+dbRatio = 0.98;
 
 eastThr = 620105;
 northThr = 5735800;
@@ -47,7 +47,7 @@ for i = 1:length(whichSet)
     dbStruct.posDistSqThr = dataset.posDistSqThr;
     dbStruct.nonTrivPosDistSqThr = dataset.nonTrivPosDistSqThr;
     
-    save(['~/Data/netvlad/datasets/robotCar_' dbStruct.whichSet '.mat'], 'dbStruct');
+    save(['~/Data/netvlad/datasets/robotCar_' dbStruct.whichSet '_dbRatio' num2str(dbRatio) '.mat'], 'dbStruct');
 end
 %% plots
 % plot image positions
