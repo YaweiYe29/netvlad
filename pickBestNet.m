@@ -33,7 +33,10 @@ function [bestEpoch, bestNet]= pickBestNet(sessionID, N, verbose)
         end
         trainedStr= sprintf('%.2f ', bestValRecs);
         
-        relja_display('off-the-shelf %s', offtheshelfStr);
+        if isfield(res.obj, 'pretrain')
+            relja_display('off-the-shelf %s', offtheshelfStr);
+        end
+        
         relja_display('our trained   %s', trainedStr);
         
         if exist('offtheshelfValRecs', 'var')
@@ -46,15 +49,23 @@ function [bestEpoch, bestNet]= pickBestNet(sessionID, N, verbose)
             figure; plotResults(res.obj, res.opts, res.auxData);
             
             figure;
-            plot( res.opts.recallNs, res.obj.pretrain.val.recall, 'bx-' );
-            hold on;
+            
+            if isfield(res.obj, 'pretrain')
+                plot( res.opts.recallNs, res.obj.pretrain.val.recall, 'bx-' );
+                hold on;
+            end
+            
             plot( res.opts.recallNs, res.obj.val.recall(:, bestEpoch), 'ro-' );
             xlabel('N');
             ylabel('Recall@N');
             xlim([0,50]);
             grid on;
             title( sprintf('%s %s %s %s %s', sessionID, res.opts.netID, res.opts.layerName, res.opts.dbValName, res.opts.method), 'Interpreter', 'none' );
-            legend( 'off-the-shelf', 'our trained', 'Location', 'SouthEast');
+            if isfield(res.obj, 'pretrain')
+                legend( 'off-the-shelf', 'our trained', 'Location', 'SouthEast');
+            else
+                legend('our trained', 'Location', 'SouthEast');
+            end
         end
     end
     
